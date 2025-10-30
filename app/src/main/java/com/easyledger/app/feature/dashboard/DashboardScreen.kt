@@ -13,6 +13,9 @@ fun DashboardScreen(navController: NavController) {
     Column(modifier = androidx.compose.ui.Modifier.fillMaxSize()) {
         Text("Dashboard: Totals across all main businesses")
         // TODO: Summary cards for income/expense per currency
+        Button(onClick = { navController.navigate(Routes.Business.route + "/list") }) {
+            Text("View My Businesses")
+        }
         Button(onClick = { navController.navigate(Routes.Business.route + "/create") }) {
             Text("Create a Business")
         }

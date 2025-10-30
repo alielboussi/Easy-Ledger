@@ -250,30 +250,38 @@ alter table public.transactions enable row level security;
 alter table public.business_rollups enable row level security;
 
 -- Profiles policies
-create policy if not exists "Select own profile" on public.profiles for select using (id = auth.uid());
-create policy if not exists "Update own profile" on public.profiles for update using (id = auth.uid());
+drop policy if exists "Select own profile" on public.profiles;
+create policy "Select own profile" on public.profiles for select using (id = auth.uid());
+drop policy if exists "Update own profile" on public.profiles;
+create policy "Update own profile" on public.profiles for update using (id = auth.uid());
 
 -- Businesses policies
-create policy if not exists "Select own businesses" on public.businesses for select using (owner_id = auth.uid());
-create policy if not exists "Modify own businesses" on public.businesses for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+drop policy if exists "Select own businesses" on public.businesses;
+create policy "Select own businesses" on public.businesses for select using (owner_id = auth.uid());
+drop policy if exists "Modify own businesses" on public.businesses;
+create policy "Modify own businesses" on public.businesses for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
 -- Sub-businesses policies
-create policy if not exists "Select sub by owner" on public.sub_businesses for select using (
+drop policy if exists "Select sub by owner" on public.sub_businesses;
+create policy "Select sub by owner" on public.sub_businesses for select using (
   exists (select 1 from public.businesses b where b.id = sub_businesses.business_id and b.owner_id = auth.uid())
 );
-create policy if not exists "Modify sub by owner" on public.sub_businesses for all using (
+drop policy if exists "Modify sub by owner" on public.sub_businesses;
+create policy "Modify sub by owner" on public.sub_businesses for all using (
   exists (select 1 from public.businesses b where b.id = sub_businesses.business_id and b.owner_id = auth.uid())
 ) with check (
   exists (select 1 from public.businesses b where b.id = sub_businesses.business_id and b.owner_id = auth.uid())
 );
 
 -- Categories policies
-create policy if not exists "Select categories by owner" on public.categories for select using (
+drop policy if exists "Select categories by owner" on public.categories;
+create policy "Select categories by owner" on public.categories for select using (
   (business_id is not null and exists (select 1 from public.businesses b where b.id = categories.business_id and b.owner_id = auth.uid()))
   or
   (sub_business_id is not null and exists (select 1 from public.sub_businesses s join public.businesses b on b.id = s.business_id where s.id = categories.sub_business_id and b.owner_id = auth.uid()))
 );
-create policy if not exists "Modify categories by owner" on public.categories for all using (
+drop policy if exists "Modify categories by owner" on public.categories;
+create policy "Modify categories by owner" on public.categories for all using (
   (business_id is not null and exists (select 1 from public.businesses b where b.id = categories.business_id and b.owner_id = auth.uid()))
   or
   (sub_business_id is not null and exists (select 1 from public.sub_businesses s join public.businesses b on b.id = s.business_id where s.id = categories.sub_business_id and b.owner_id = auth.uid()))
@@ -284,11 +292,14 @@ create policy if not exists "Modify categories by owner" on public.categories fo
 );
 
 -- Transactions policies
-create policy if not exists "Select own transactions" on public.transactions for select using (owner_id = auth.uid());
-create policy if not exists "Modify own transactions" on public.transactions for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
+drop policy if exists "Select own transactions" on public.transactions;
+create policy "Select own transactions" on public.transactions for select using (owner_id = auth.uid());
+drop policy if exists "Modify own transactions" on public.transactions;
+create policy "Modify own transactions" on public.transactions for all using (owner_id = auth.uid()) with check (owner_id = auth.uid());
 
 -- Rollups policies
-create policy if not exists "Select rollups by owner" on public.business_rollups for select using (
+drop policy if exists "Select rollups by owner" on public.business_rollups;
+create policy "Select rollups by owner" on public.business_rollups for select using (
   exists (select 1 from public.businesses b where b.id = business_rollups.business_id and b.owner_id = auth.uid())
 );
 

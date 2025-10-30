@@ -15,6 +15,15 @@ data class CreateBusinessParams(
 	val currencyFormat: String?
 )
 
+data class UpdateBusinessParams(
+	val name: String? = null,
+	val logoUrl: String? = null,
+	val primaryCurrency: String? = null,
+	val secondaryCurrency: String? = null,
+	val currencySymbol: String? = null,
+	val currencyFormat: String? = null
+)
+
 // Basic implementation for creating and listing businesses
 class SupabaseBusinessRepository: BusinessRepository {
 	suspend fun createBusiness(params: CreateBusinessParams, explicitId: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
@@ -70,11 +79,169 @@ class SupabaseBusinessRepository: BusinessRepository {
 		)
 	}
 
+	/** Upload bytes to an explicit logos path (upsert) */
+	suspend fun uploadLogoToPath(
+		path: String,
+		bytes: ByteArray,
+		mimeType: String
+	): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.storage.from("logos").upload(
+				path = path,
+				data = bytes,
+				upsert = true,
+				contentType = mimeType
+			)
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
 	suspend fun listBusinesses(): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
 		runCatching {
 			SupabaseProvider.client.postgrest["businesses"].select().decodeList<Map<String, Any?>>()
 		}.fold(
 			onSuccess = { Result.success(it) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun getBusiness(id: String): Result<Map<String, Any?>> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["businesses"].select { eq("id", id) }.single().decodeAs<Map<String, Any?>>()
+		}.fold(
+			onSuccess = { Result.success(it) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun updateBusiness(id: String, params: UpdateBusinessParams): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			val body = buildMap<String, Any?> {
+				params.name?.let { put("name", it) }
+				if (params.logoUrl != null) put("logo_url", params.logoUrl)
+				params.primaryCurrency?.let { put("currency_primary", it) }
+				if (params.secondaryCurrency != null) put("currency_secondary", params.secondaryCurrency)
+				if (params.currencySymbol != null) put("currency_symbol", params.currencySymbol)
+				if (params.currencyFormat != null) put("currency_format", params.currencyFormat)
+			}
+			if (body.isNotEmpty()) {
+				SupabaseProvider.client.postgrest["businesses"].update(body) { eq("id", id) }
+			}
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun deleteBusiness(id: String): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["businesses"].delete { eq("id", id) }
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	// Sub-businesses
+	suspend fun listSubBusinesses(businessId: String): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["sub_businesses"].select { eq("business_id", businessId) }.decodeList<Map<String, Any?>>()
+		}.fold(
+			onSuccess = { Result.success(it) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun createSubBusiness(businessId: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["sub_businesses"].insert(mapOf(
+				"business_id" to businessId,
+				"name" to name
+			))
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun updateSubBusiness(id: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["sub_businesses"].update(mapOf("name" to name)) { eq("id", id) }
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun deleteSubBusiness(id: String): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["sub_businesses"].delete { eq("id", id) }
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	// Categories
+	suspend fun listCategoriesForBusiness(businessId: String): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["categories"].select {
+				eq("business_id", businessId)
+			}.decodeList<Map<String, Any?>>()
+		}.fold(
+			onSuccess = { Result.success(it) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun listCategoriesForSubBusiness(subBusinessId: String): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["categories"].select {
+				eq("sub_business_id", subBusinessId)
+			}.decodeList<Map<String, Any?>>()
+		}.fold(
+			onSuccess = { Result.success(it) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun createCategory(
+		name: String,
+		type: String,
+		businessId: String?,
+		subBusinessId: String?
+	): Result<Unit> = withContext(Dispatchers.IO) {
+		require(!(businessId == null && subBusinessId == null)) { "Either businessId or subBusinessId must be provided" }
+		runCatching {
+			val body = buildMap<String, Any?> {
+				put("name", name)
+				put("type", type)
+				put("business_id", businessId)
+				put("sub_business_id", subBusinessId)
+			}
+			SupabaseProvider.client.postgrest["categories"].insert(body)
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun updateCategoryName(id: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["categories"].update(mapOf("name" to name)) { eq("id", id) }
+		}.fold(
+			onSuccess = { Result.success(Unit) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	suspend fun deleteCategory(id: String): Result<Unit> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.postgrest["categories"].delete { eq("id", id) }
+		}.fold(
+			onSuccess = { Result.success(Unit) },
 			onFailure = { Result.failure(it) }
 		)
 	}

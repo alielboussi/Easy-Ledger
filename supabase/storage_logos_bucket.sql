@@ -6,24 +6,28 @@ values ('logos', 'logos', false)
 on conflict (id) do nothing;
 
 -- Policies for storage.objects (RLS enabled by default)
-create policy if not exists "Logos read own" on storage.objects
+drop policy if exists "Logos read own" on storage.objects;
+create policy "Logos read own" on storage.objects
 for select using (
   bucket_id = 'logos' and name like auth.uid()::text || '/%'
 );
 
-create policy if not exists "Logos write own" on storage.objects
+drop policy if exists "Logos write own" on storage.objects;
+create policy "Logos write own" on storage.objects
 for insert with check (
   bucket_id = 'logos' and name like auth.uid()::text || '/%'
 );
 
-create policy if not exists "Logos update own" on storage.objects
+drop policy if exists "Logos update own" on storage.objects;
+create policy "Logos update own" on storage.objects
 for update using (
   bucket_id = 'logos' and name like auth.uid()::text || '/%'
 ) with check (
   bucket_id = 'logos' and name like auth.uid()::text || '/%'
 );
 
-create policy if not exists "Logos delete own" on storage.objects
+drop policy if exists "Logos delete own" on storage.objects;
+create policy "Logos delete own" on storage.objects
 for delete using (
   bucket_id = 'logos' and name like auth.uid()::text || '/%'
 );
