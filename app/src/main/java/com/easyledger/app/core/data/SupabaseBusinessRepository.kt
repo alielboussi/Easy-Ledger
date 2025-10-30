@@ -3,6 +3,9 @@ package com.easyledger.app.core.data
 import com.easyledger.app.core.supabase.SupabaseProvider
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.storage.storage
+import io.ktor.http.ContentType
+import kotlin.time.Duration.Companion.seconds
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -68,10 +71,11 @@ class SupabaseBusinessRepository: BusinessRepository {
 			val path = "$userId/businesses/$businessId.$ext"
 			SupabaseProvider.client.storage.from("logos").upload(
 				path = path,
-				data = bytes,
-				upsert = true,
-				contentType = mimeType
-			)
+				data = bytes
+			) {
+				upsert = true
+				contentType = ContentType.parse(mimeType)
+			}
 			path
 		}.fold(
 			onSuccess = { Result.success(it) },
@@ -88,10 +92,11 @@ class SupabaseBusinessRepository: BusinessRepository {
 		runCatching {
 			SupabaseProvider.client.storage.from("logos").upload(
 				path = path,
-				data = bytes,
-				upsert = true,
-				contentType = mimeType
-			)
+				data = bytes
+			) {
+				upsert = true
+				// Content type may be set by caller if needed; omitted here.
+			}
 		}.fold(
 			onSuccess = { Result.success(Unit) },
 			onFailure = { Result.failure(it) }
@@ -109,7 +114,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 
 	suspend fun getBusiness(id: String): Result<Map<String, Any?>> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.postgrest["businesses"].select { eq("id", id) }.single().decodeAs<Map<String, Any?>>()
+			SupabaseProvider.client.postgrest["businesses"].select {
+				filter { eq("id", id) }
+			}.decodeSingle<Map<String, Any?>>()
 		}.fold(
 			onSuccess = { Result.success(it) },
 			onFailure = { Result.failure(it) }
@@ -127,7 +134,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 				if (params.currencyFormat != null) put("currency_format", params.currencyFormat)
 			}
 			if (body.isNotEmpty()) {
-				SupabaseProvider.client.postgrest["businesses"].update(body) { eq("id", id) }
+				SupabaseProvider.client.postgrest["businesses"].update(body) {
+					filter { eq("id", id) }
+				}
 			}
 		}.fold(
 			onSuccess = { Result.success(Unit) },
@@ -137,7 +146,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 
 	suspend fun deleteBusiness(id: String): Result<Unit> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.postgrest["businesses"].delete { eq("id", id) }
+			SupabaseProvider.client.postgrest["businesses"].delete {
+				filter { eq("id", id) }
+			}
 		}.fold(
 			onSuccess = { Result.success(Unit) },
 			onFailure = { Result.failure(it) }
@@ -147,7 +158,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 	// Sub-businesses
 	suspend fun listSubBusinesses(businessId: String): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.postgrest["sub_businesses"].select { eq("business_id", businessId) }.decodeList<Map<String, Any?>>()
+			SupabaseProvider.client.postgrest["sub_businesses"].select {
+				filter { eq("business_id", businessId) }
+			}.decodeList<Map<String, Any?>>()
 		}.fold(
 			onSuccess = { Result.success(it) },
 			onFailure = { Result.failure(it) }
@@ -168,7 +181,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 
 	suspend fun updateSubBusiness(id: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.postgrest["sub_businesses"].update(mapOf("name" to name)) { eq("id", id) }
+			SupabaseProvider.client.postgrest["sub_businesses"].update(mapOf("name" to name)) {
+				filter { eq("id", id) }
+			}
 		}.fold(
 			onSuccess = { Result.success(Unit) },
 			onFailure = { Result.failure(it) }
@@ -177,7 +192,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 
 	suspend fun deleteSubBusiness(id: String): Result<Unit> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.postgrest["sub_businesses"].delete { eq("id", id) }
+			SupabaseProvider.client.postgrest["sub_businesses"].delete {
+				filter { eq("id", id) }
+			}
 		}.fold(
 			onSuccess = { Result.success(Unit) },
 			onFailure = { Result.failure(it) }
@@ -188,7 +205,7 @@ class SupabaseBusinessRepository: BusinessRepository {
 	suspend fun listCategoriesForBusiness(businessId: String): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
 		runCatching {
 			SupabaseProvider.client.postgrest["categories"].select {
-				eq("business_id", businessId)
+				filter { eq("business_id", businessId) }
 			}.decodeList<Map<String, Any?>>()
 		}.fold(
 			onSuccess = { Result.success(it) },
@@ -199,7 +216,7 @@ class SupabaseBusinessRepository: BusinessRepository {
 	suspend fun listCategoriesForSubBusiness(subBusinessId: String): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
 		runCatching {
 			SupabaseProvider.client.postgrest["categories"].select {
-				eq("sub_business_id", subBusinessId)
+				filter { eq("sub_business_id", subBusinessId) }
 			}.decodeList<Map<String, Any?>>()
 		}.fold(
 			onSuccess = { Result.success(it) },
@@ -230,7 +247,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 
 	suspend fun updateCategoryName(id: String, name: String): Result<Unit> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.postgrest["categories"].update(mapOf("name" to name)) { eq("id", id) }
+			SupabaseProvider.client.postgrest["categories"].update(mapOf("name" to name)) {
+				filter { eq("id", id) }
+			}
 		}.fold(
 			onSuccess = { Result.success(Unit) },
 			onFailure = { Result.failure(it) }
@@ -239,7 +258,9 @@ class SupabaseBusinessRepository: BusinessRepository {
 
 	suspend fun deleteCategory(id: String): Result<Unit> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.postgrest["categories"].delete { eq("id", id) }
+			SupabaseProvider.client.postgrest["categories"].delete {
+				filter { eq("id", id) }
+			}
 		}.fold(
 			onSuccess = { Result.success(Unit) },
 			onFailure = { Result.failure(it) }
@@ -249,7 +270,7 @@ class SupabaseBusinessRepository: BusinessRepository {
 	/** Create a short-lived signed URL for a private logo path */
 	suspend fun createLogoSignedUrl(path: String, expiresInSeconds: Int = 3600): Result<String> = withContext(Dispatchers.IO) {
 		runCatching {
-			SupabaseProvider.client.storage.from("logos").createSignedUrl(path, expiresInSeconds)
+			SupabaseProvider.client.storage.from("logos").createSignedUrl(path, expiresInSeconds.seconds)
 		}.fold(
 			onSuccess = { Result.success(it) },
 			onFailure = { Result.failure(it) }

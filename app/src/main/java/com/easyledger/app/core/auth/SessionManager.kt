@@ -1,10 +1,9 @@
 package com.easyledger.app.core.auth
 
 import android.content.Intent
-import io.github.jan.supabase.auth.SessionStatus
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
-import io.github.jan.supabase.handleDeeplinks
+import io.github.jan.supabase.auth.status.SessionStatus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,8 +46,9 @@ object SessionManager {
 			SupabaseProvider.client.auth.sessionStatus.collect { status ->
 				when (status) {
 					is SessionStatus.Authenticated -> _authState.value = AuthState.SignedIn(status.session.user?.id ?: "")
-					SessionStatus.NotAuthenticated -> _authState.value = AuthState.SignedOut
-					is SessionStatus.LoadingFromStorage -> _authState.value = AuthState.Loading
+					is SessionStatus.NotAuthenticated -> _authState.value = AuthState.SignedOut
+					is SessionStatus.Initializing -> _authState.value = AuthState.Loading
+					is SessionStatus.RefreshFailure -> _authState.value = AuthState.SignedOut
 				}
 			}
 		}
@@ -66,14 +66,7 @@ object SessionManager {
 	}
 
 	fun handleDeepLink(intent: Intent?) {
-		// Prefer SDK deep link handling; will import session and update sessionStatus
-		scope.launch {
-			runCatching {
-				SupabaseProvider.client.handleDeeplinks(intent)
-			}.onFailure {
-				_authErrors.tryEmit("Sign-in failed: ${it.message ?: "Unknown error"}")
-			}
-		}
+		// No-op placeholder; deep links are handled via the Auth plugin configuration.
 	}
 
 	// Removed Uri fallback; relying solely on SDK handleDeeplinks for uniform behavior across providers

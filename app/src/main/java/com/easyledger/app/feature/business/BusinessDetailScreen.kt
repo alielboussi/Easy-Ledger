@@ -16,6 +16,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -26,6 +28,7 @@ import coil.compose.AsyncImage
 import com.easyledger.app.core.data.SupabaseBusinessRepository
 import com.easyledger.app.core.data.UpdateBusinessParams
 import com.easyledger.app.core.supabase.SupabaseProvider
+import io.github.jan.supabase.auth.auth
 
 @Composable
 fun BusinessDetailScreen(navController: NavController, businessId: String, repo: SupabaseBusinessRepository = SupabaseBusinessRepository()) {
@@ -46,12 +49,12 @@ fun BusinessDetailScreen(navController: NavController, businessId: String, repo:
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
+    val selectedLogoUri = remember { mutableStateOf<Uri?>(null) }
     val logoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             selectedLogoUri.value = uri
         }
     }
-    val selectedLogoUri = remember { mutableStateOf<Uri?>(null) }
 
     // Sub-business and Categories state
     var subBusinesses by remember { mutableStateOf<List<Map<String, Any?>>>(emptyList()) }

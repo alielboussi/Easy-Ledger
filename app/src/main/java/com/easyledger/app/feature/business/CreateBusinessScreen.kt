@@ -19,6 +19,7 @@ import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.ui.platform.LocalContext
 import com.easyledger.app.core.supabase.SupabaseProvider
+import io.github.jan.supabase.auth.auth
 import java.util.UUID
 
 @Composable
@@ -49,7 +50,7 @@ fun CreateBusinessScreen(navController: NavController, repo: SupabaseBusinessRep
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(value = secondaryCurrency, onValueChange = { secondaryCurrency = it }, label = { Text("Secondary currency (optional)") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = { Text("Currency symbol (e.g., $)") }, modifier = Modifier.fillMaxWidth())
+    OutlinedTextField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = { Text("Currency symbol (e.g., \$)") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(8.dp))
         OutlinedTextField(value = currencyFormat, onValueChange = { currencyFormat = it }, label = { Text("Currency format (e.g., #,##0.00)") }, modifier = Modifier.fillMaxWidth())
         Spacer(Modifier.height(16.dp))

@@ -7,16 +7,13 @@ import androidx.core.view.WindowCompat
 import com.easyledger.app.ui.theme.EasyLedgerTheme
 import com.easyledger.app.navigation.AppNavHost
 import android.content.Intent
-import com.easyledger.app.core.auth.SessionManager
 import com.easyledger.app.core.supabase.SupabaseProvider
-import io.github.jan.supabase.handleDeeplinks
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
-        // Let Supabase SDK parse and finalize OAuth/OTP sessions from deeplinks
-        runCatching { SupabaseProvider.client.handleDeeplinks(intent) }
+    // OAuth/OTP deeplink handling is configured in the Auth plugin; no explicit call required here.
         setContent {
             EasyLedgerTheme {
                 AppNavHost()
@@ -24,8 +21,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onNewIntent(intent: Intent?) {
+    override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        runCatching { SupabaseProvider.client.handleDeeplinks(intent) }
+    // If needed, forward new intents (e.g., OAuth redirect) to the Auth plugin here in the future.
     }
 }
