@@ -17,11 +17,12 @@ data class CreateBusinessParams(
 
 // Basic implementation for creating and listing businesses
 class SupabaseBusinessRepository: BusinessRepository {
-	suspend fun createBusiness(params: CreateBusinessParams): Result<Unit> = withContext(Dispatchers.IO) {
+	suspend fun createBusiness(params: CreateBusinessParams, explicitId: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
 		runCatching {
 			val userId = SupabaseProvider.client.auth.currentUserOrNull()?.id
 				?: error("Not authenticated")
 			val body = buildMap<String, Any?> {
+				if (explicitId != null) put("id", explicitId)
 				put("owner_id", userId)
 				put("name", params.name)
 				put("logo_url", params.logoUrl)
@@ -37,9 +38,51 @@ class SupabaseBusinessRepository: BusinessRepository {
 		)
 	}
 
+	/**
+	 * Uploads a business logo image to the private 'logos' bucket under
+	 * user-scoped path: {userId}/businesses/{businessId}.{ext}
+	 * Returns the storage path string if successful.
+	 */
+	suspend fun uploadBusinessLogo(
+		userId: String,
+		businessId: String,
+		bytes: ByteArray,
+		mimeType: String
+	): Result<String> = withContext(Dispatchers.IO) {
+		runCatching {
+			val ext = when {
+				mimeType.contains("png", ignoreCase = true) -> "png"
+				mimeType.contains("jpeg", ignoreCase = true) || mimeType.contains("jpg", ignoreCase = true) -> "jpg"
+				mimeType.contains("webp", ignoreCase = true) -> "webp"
+				else -> "jpg"
+			}
+			val path = "$userId/businesses/$businessId.$ext"
+			SupabaseProvider.client.storage.from("logos").upload(
+				path = path,
+				data = bytes,
+				upsert = true,
+				contentType = mimeType
+			)
+			path
+		}.fold(
+			onSuccess = { Result.success(it) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
 	suspend fun listBusinesses(): Result<List<Map<String, Any?>>> = withContext(Dispatchers.IO) {
 		runCatching {
 			SupabaseProvider.client.postgrest["businesses"].select().decodeList<Map<String, Any?>>()
+		}.fold(
+			onSuccess = { Result.success(it) },
+			onFailure = { Result.failure(it) }
+		)
+	}
+
+	/** Create a short-lived signed URL for a private logo path */
+	suspend fun createLogoSignedUrl(path: String, expiresInSeconds: Int = 3600): Result<String> = withContext(Dispatchers.IO) {
+		runCatching {
+			SupabaseProvider.client.storage.from("logos").createSignedUrl(path, expiresInSeconds)
 		}.fold(
 			onSuccess = { Result.success(it) },
 			onFailure = { Result.failure(it) }
