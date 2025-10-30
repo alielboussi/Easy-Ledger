@@ -21,12 +21,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.DatePicker
-import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -48,11 +45,11 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import com.easyledger.app.core.auth.AuthState
 import com.easyledger.app.core.auth.SessionManager
 import com.easyledger.app.core.data.CountryData
+import androidx.compose.ui.viewinterop.AndroidView
+import com.google.android.gms.common.SignInButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,8 +91,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
     var username by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    var dateOfBirth by remember { mutableStateOf("") } // YYYY-MM-DD
-    var showDatePicker by remember { mutableStateOf(false) }
+    // DOB removed from sign-up flow
     var country by remember { mutableStateOf("") }
     var countryExpanded by remember { mutableStateOf(false) }
     var selectedCountryCode by remember { mutableStateOf("+1") }
@@ -103,7 +99,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
     var phone by remember { mutableStateOf("") }
 
     val red = Color(0xFFB00020)
-    val glowColor = Color(0x40FF1744) // translucent for glow
+    val glowColor = Color(0x66B00020) // thicker translucent red glow
     val shape = RoundedCornerShape(12.dp)
 
     Column(
@@ -114,7 +110,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("EasyLedger", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = Color.Black)
+    Text("Easy Ledger", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = Color.Black)
         Spacer(Modifier.height(24.dp))
 
         Card(
@@ -130,24 +126,11 @@ private fun AuthForm(viewModel: AuthViewModel) {
                         onValueChange = { username = it },
                         label = "Username",
                         red = red,
-                        glow = glowColor
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    GlowyField(
-                        value = dateOfBirth,
-                        onValueChange = { dateOfBirth = it },
-                        label = "Date of Birth (YYYY-MM-DD)",
-                        keyboardType = KeyboardType.Text,
-                        red = red,
                         glow = glowColor,
-                        readOnly = true,
-                        trailingIcon = {
-                            IconButton(onClick = { showDatePicker = true }) {
-                                Icon(Icons.Filled.DateRange, contentDescription = "Pick date")
-                            }
-                        }
+                        textColor = Color.Black
                     )
                     Spacer(Modifier.height(12.dp))
+                    
                     // Country dropdown
                     CountryDropdown(
                         label = "Country",
@@ -182,7 +165,8 @@ private fun AuthForm(viewModel: AuthViewModel) {
                     label = if (mode == AuthMode.SignIn) "Email or Username" else "Email",
                     keyboardType = KeyboardType.Email,
                     red = red,
-                    glow = glowColor
+                    glow = glowColor,
+                    textColor = if (mode == AuthMode.SignIn) Color.Black else null
                 )
                 Spacer(Modifier.height(12.dp))
 
@@ -193,7 +177,8 @@ private fun AuthForm(viewModel: AuthViewModel) {
                     keyboardType = KeyboardType.Password,
                     isPassword = true,
                     red = red,
-                    glow = glowColor
+                    glow = glowColor,
+                    textColor = Color.Black
                 )
 
                 Spacer(Modifier.height(20.dp))
@@ -212,7 +197,6 @@ private fun AuthForm(viewModel: AuthViewModel) {
                                 username.trim(),
                                 email.trim(),
                                 password,
-                                dateOfBirth.trim().ifBlank { null },
                                 country.trim().ifBlank { null },
                                 selectedCountryCode.trim().ifBlank { null },
                                 phone.trim().ifBlank { null }
@@ -220,7 +204,8 @@ private fun AuthForm(viewModel: AuthViewModel) {
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(vertical = 14.dp)
+                    contentPadding = PaddingValues(vertical = 14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = red, contentColor = Color.White)
                 ) {
                     Text(if (mode == AuthMode.SignIn) "Sign In" else "Create Account")
                 }
@@ -235,53 +220,40 @@ private fun AuthForm(viewModel: AuthViewModel) {
     androidx.compose.material3.HorizontalDivider(color = Color(0xFFE0E0E0))
         Spacer(Modifier.height(16.dp))
 
-        Button(
-            onClick = { viewModel.signInWithGoogle() },
-            colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-            modifier = Modifier.fillMaxWidth(),
-            contentPadding = PaddingValues(vertical = 12.dp)
-        ) {
-            Text("Continue with Google", color = Color.Black)
+        if (mode == AuthMode.SignIn) {
+            OfficialGoogleSignInButton { viewModel.signInWithGoogle() }
         }
 
         Spacer(Modifier.height(8.dp))
         Spacer(Modifier.height(16.dp))
     }
 
-    // Date picker dialog for DOB
-    DatePickerHost(
-        show = showDatePicker,
-        onDismiss = { showDatePicker = false },
-        onDateSelected = { dateOfBirth = it }
+    // No DOB picker
+}
+
+@Composable
+private fun OfficialGoogleSignInButton(onClick: () -> Unit) {
+    AndroidView(
+        factory = { context ->
+            SignInButton(context).apply {
+                setSize(SignInButton.SIZE_WIDE)
+                setColorScheme(SignInButton.COLOR_LIGHT)
+                setOnClickListener { onClick() }
+                // Let layout params stretch to parent width
+                layoutParams = android.view.ViewGroup.LayoutParams(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+            }
+        },
+        update = { view ->
+            view.setOnClickListener { onClick() }
+        },
+        modifier = Modifier.fillMaxWidth()
     )
 }
 
 private enum class AuthMode { SignIn, SignUp }
-
-@Composable
-@OptIn(ExperimentalMaterial3Api::class)
-private fun DatePickerHost(show: Boolean, onDismiss: () -> Unit, onDateSelected: (String) -> Unit) {
-    if (!show) return
-    val pickerState = androidx.compose.material3.rememberDatePickerState()
-    DatePickerDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
-            TextButton(onClick = {
-                val selected = pickerState.selectedDateMillis
-                if (selected != null) {
-                    val ld = java.time.Instant.ofEpochMilli(selected)
-                        .atZone(java.time.ZoneId.systemDefault())
-                        .toLocalDate()
-                    onDateSelected(ld.toString())
-                }
-                onDismiss()
-            }) { Text("OK") }
-        },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
-    ) {
-        DatePicker(state = pickerState)
-    }
-}
 
 @Composable
 private fun GlowyField(
@@ -293,7 +265,8 @@ private fun GlowyField(
     red: Color,
     glow: Color,
     readOnly: Boolean = false,
-    trailingIcon: (@Composable (() -> Unit))? = null
+    trailingIcon: (@Composable (() -> Unit))? = null,
+    textColor: Color? = null
 ) {
     // Simulate glow using an outer card with translucent red, then an OutlinedTextField
     Card(
@@ -308,12 +281,21 @@ private fun GlowyField(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
-                .padding(2.dp),
+                .padding(8.dp),
             singleLine = true,
             readOnly = readOnly,
             keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else keyboardType),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-            trailingIcon = trailingIcon
+            trailingIcon = trailingIcon,
+            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                color = textColor ?: androidx.compose.material3.LocalTextStyle.current.color
+            ),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = red,
+                unfocusedBorderColor = red,
+                focusedLabelColor = red,
+                cursorColor = red
+            )
         )
     }
 }
@@ -339,8 +321,14 @@ private fun CountryDropdown(
                 value = selected,
                 onValueChange = {},
                 label = { Text(label) },
-                modifier = Modifier.fillMaxWidth().padding(2.dp),
-                readOnly = true
+                modifier = Modifier.fillMaxWidth().padding(8.dp),
+                readOnly = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = red,
+                    unfocusedBorderColor = red,
+                    focusedLabelColor = red,
+                    cursorColor = red
+                )
             )
             Box(
                 modifier = Modifier
@@ -388,8 +376,14 @@ private fun PhoneWithCode(
                     value = selectedCode,
                     onValueChange = {},
                     label = { Text("Code") },
-                    modifier = Modifier.fillMaxWidth().padding(2.dp),
-                    readOnly = true
+                    modifier = Modifier.fillMaxWidth().padding(8.dp),
+                    readOnly = true,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = red,
+                        unfocusedBorderColor = red,
+                        focusedLabelColor = red,
+                        cursorColor = red
+                    )
                 )
             }
             DropdownMenu(expanded = codeExpanded, onDismissRequest = { onCodeExpandedChange(false) }) {
@@ -408,9 +402,15 @@ private fun PhoneWithCode(
                 value = phone,
                 onValueChange = onPhoneChange,
                 label = { Text("Phone number") },
-                modifier = Modifier.fillMaxWidth().background(Color.White).padding(2.dp),
+                modifier = Modifier.fillMaxWidth().background(Color.White).padding(8.dp),
                 singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = red,
+                    unfocusedBorderColor = red,
+                    focusedLabelColor = red,
+                    cursorColor = red
+                )
             )
         }
     }

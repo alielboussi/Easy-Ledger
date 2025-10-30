@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -18,8 +19,6 @@ import androidx.navigation.NavController
 import com.easyledger.app.core.data.ProfileRepository
 import com.easyledger.app.core.data.ProfileUpdate
 import kotlinx.coroutines.launch
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.DateRange
 import com.easyledger.app.core.data.CountryData
 import java.time.Instant
 import java.time.ZoneId
@@ -34,7 +33,6 @@ fun ProfileScreen(navController: NavController) {
     var error by remember { mutableStateOf<String?>(null) }
 
     var username by remember { mutableStateOf("") }
-    var dateOfBirth by remember { mutableStateOf("") }
     var country by remember { mutableStateOf("") }
     var countryCode by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
@@ -43,14 +41,13 @@ fun ProfileScreen(navController: NavController) {
     var showDatePicker by remember { mutableStateOf(false) }
 
     val red = Color(0xFFB00020)
-    val glowColor = Color(0x40FF1744)
+    val glowColor = Color(0x66B00020)
     val shape = RoundedCornerShape(12.dp)
 
     LaunchedEffect(Unit) {
         runCatching { repo.getCurrent() }.onSuccess { p ->
             if (p != null) {
                 username = p.username
-                dateOfBirth = p.date_of_birth ?: ""
                 country = p.country ?: ""
                 countryCode = p.country_code ?: ""
                 phone = p.phone ?: ""
@@ -62,25 +59,7 @@ fun ProfileScreen(navController: NavController) {
         }
     }
 
-    if (showDatePicker) {
-        val pickerState = rememberDatePickerState()
-        DatePickerDialog(
-            onDismissRequest = { showDatePicker = false },
-            confirmButton = {
-                TextButton(onClick = {
-                    val selected = pickerState.selectedDateMillis
-                    if (selected != null) {
-                        val ld = Instant.ofEpochMilli(selected).atZone(ZoneId.systemDefault()).toLocalDate()
-                        dateOfBirth = ld.toString() // YYYY-MM-DD
-                    }
-                    showDatePicker = false
-                }) { Text("OK") }
-            },
-            dismissButton = { TextButton(onClick = { showDatePicker = false }) { Text("Cancel") } }
-        ) {
-            DatePicker(state = pickerState)
-        }
-    }
+    // DOB removed
 
     val countries = remember { CountryData.countries }
 
@@ -115,21 +94,7 @@ fun ProfileScreen(navController: NavController) {
                         )
                         Spacer(Modifier.height(12.dp))
 
-                        GlowyField(
-                            value = dateOfBirth,
-                            onValueChange = { dateOfBirth = it },
-                            label = "Date of Birth (YYYY-MM-DD)",
-                            red = red,
-                            glow = glowColor,
-                            readOnly = true,
-                            onClick = { showDatePicker = true },
-                            trailingIcon = {
-                                IconButton(onClick = { showDatePicker = true }) {
-                                    Icon(Icons.Filled.DateRange, contentDescription = "Pick date")
-                                }
-                            }
-                        )
-                        Spacer(Modifier.height(12.dp))
+                        // DOB removed from profile UI
 
                         // Country dropdown that sets both country and calling code
                         Card(shape = shape, colors = CardDefaults.cardColors(containerColor = glowColor), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
@@ -140,9 +105,15 @@ fun ProfileScreen(navController: NavController) {
                                     label = { Text("Country") },
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(2.dp)
+                                        .padding(8.dp)
                                         .clickable { countryExpanded = true },
-                                    readOnly = true
+                                    readOnly = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = red,
+                                        unfocusedBorderColor = red,
+                                        focusedLabelColor = red,
+                                        cursorColor = red
+                                    )
                                 )
                             }
                             DropdownMenu(expanded = countryExpanded, onDismissRequest = { countryExpanded = false }) {
@@ -186,7 +157,6 @@ fun ProfileScreen(navController: NavController) {
                                     error = null
                                     val update = ProfileUpdate(
                                         username = username.trim().ifBlank { null },
-                                        date_of_birth = dateOfBirth.trim().ifBlank { null },
                                         country = country.trim().ifBlank { null },
                                         country_code = countryCode.trim().ifBlank { null },
                                         phone = phone.trim().ifBlank { null }
@@ -230,12 +200,18 @@ private fun GlowyField(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Color.White)
-                .padding(2.dp)
+                .padding(8.dp)
                 .let { if (onClick != null) it.clickable { onClick() } else it },
             singleLine = true,
             readOnly = readOnly,
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
-            trailingIcon = trailingIcon
+            trailingIcon = trailingIcon,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = red,
+                unfocusedBorderColor = red,
+                focusedLabelColor = red,
+                cursorColor = red
+            )
         )
     }
 }

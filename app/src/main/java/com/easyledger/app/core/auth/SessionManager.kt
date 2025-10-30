@@ -102,7 +102,7 @@ object SessionManager {
 		}
 	}
 
-	fun signUpWithEmail(username: String, email: String, password: String, dateOfBirth: String?, country: String?, countryCode: String?, phone: String?) {
+	fun signUpWithEmail(username: String, email: String, password: String, country: String?, countryCode: String?, phone: String?) {
 		scope.launch {
 			runCatching {
 				SupabaseProvider.client.auth.signUpWith(Email) {
@@ -111,7 +111,6 @@ object SessionManager {
 					// save username in user_metadata
 					data = buildJsonObject {
 						put("username", username)
-						if (!dateOfBirth.isNullOrBlank()) put("date_of_birth", dateOfBirth)
 						if (!country.isNullOrBlank()) put("country", country)
 						if (!countryCode.isNullOrBlank()) put("country_code", countryCode)
 						if (!phone.isNullOrBlank()) put("phone", phone)

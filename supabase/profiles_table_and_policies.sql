@@ -6,7 +6,6 @@ create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   email text not null unique,
   username text not null unique,
-  date_of_birth date,
   country text,
   country_code text,
   phone text,
@@ -52,8 +51,6 @@ returns trigger as $$
 declare
   base_username text;
   final_username text;
-  dob_text text;
-  parsed_dob date;
   cc text;
   phone_text text;
   country_text text;
@@ -69,19 +66,12 @@ begin
     final_username := base_username || '_' || substr(new.id::text, 1, 8);
   end if;
 
-  dob_text := nullif(trim((new.raw_user_meta_data ->> 'date_of_birth')::text), '');
-  begin
-    parsed_dob := case when dob_text is null then null else to_date(dob_text, 'YYYY-MM-DD') end;
-  exception when others then
-    parsed_dob := null; -- ignore malformed input
-  end;
-
   country_text := nullif(trim((new.raw_user_meta_data ->> 'country')::text), '');
   cc := nullif(trim((new.raw_user_meta_data ->> 'country_code')::text), '');
   phone_text := nullif(trim((new.raw_user_meta_data ->> 'phone')::text), '');
 
-  insert into public.profiles(id, email, username, date_of_birth, country, country_code, phone)
-  values (new.id, new.email, final_username, parsed_dob, country_text, cc, phone_text)
+  insert into public.profiles(id, email, username, country, country_code, phone)
+  values (new.id, new.email, final_username, country_text, cc, phone_text)
   on conflict (id) do nothing; -- id uniqueness guarantees single row per auth user
 
   return new;
@@ -93,3 +83,6 @@ drop trigger if exists on_auth_user_created on auth.users;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function public.handle_new_user();
+
+-- If migrating an existing database, remove the column explicitly (safe if already dropped)
+alter table public.profiles drop column if exists date_of_birth;

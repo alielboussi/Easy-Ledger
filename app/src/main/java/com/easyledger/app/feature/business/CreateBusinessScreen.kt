@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -45,7 +46,7 @@ fun CreateBusinessScreen(navController: NavController, repo: SupabaseBusinessRep
         onResult = { uri -> selectedLogo = uri }
     )
 
-    val glowColor = Color(0x40FF1744)
+    val glowColor = Color(0x66B00020)
     Column(
         Modifier
             .fillMaxSize()
@@ -153,8 +154,14 @@ private fun GlowyField(
             modifier = modifier
                 .fillMaxWidth()
                 .background(Color.White)
-                .padding(2.dp),
-            singleLine = true
+                .padding(8.dp),
+            singleLine = true,
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = Color(0xFFB00020),
+                unfocusedBorderColor = Color(0xFFB00020),
+                focusedLabelColor = Color(0xFFB00020),
+                cursorColor = Color(0xFFB00020)
+            )
         )
     }
 }
