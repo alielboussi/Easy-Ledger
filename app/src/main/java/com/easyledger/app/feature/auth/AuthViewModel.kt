@@ -1,6 +1,4 @@
 package com.easyledger.app.feature.auth
-
-import android.app.Activity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.easyledger.app.core.auth.AuthState
@@ -15,9 +13,9 @@ class AuthViewModel : ViewModel() {
         SessionManager.initialize()
     }
 
-    fun signInWithGoogle(activity: Activity) {
+    fun signInWithGoogle() {
         viewModelScope.launch {
-            SessionManager.startGoogleSignIn(activity)
+            SessionManager.startGoogleSignIn()
         }
     }
 

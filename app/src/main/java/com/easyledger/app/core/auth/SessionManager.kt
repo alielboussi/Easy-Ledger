@@ -1,9 +1,6 @@
 package com.easyledger.app.core.auth
 
-import android.app.Activity
 import android.content.Intent
-import android.net.Uri
-import com.easyledger.app.BuildConfig
 import io.github.jan.supabase.auth.SessionStatus
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
@@ -57,7 +54,7 @@ object SessionManager {
 		}
 	}
 
-	fun startGoogleSignIn(@Suppress("UNUSED_PARAMETER") activity: Activity) {
+	fun startGoogleSignIn() {
 		// SDK-driven PKCE OAuth; SDK opens Custom Tabs automatically per Auth config
 		scope.launch {
 			runCatching {
@@ -79,24 +76,7 @@ object SessionManager {
 		}
 	}
 
-	fun handleDeepLink(uri: Uri) {
-		// Legacy fallback kept for compatibility: parse code and exchange if SDK handling isn't used
-		scope.launch {
-			runCatching {
-				val errorDescription = uri.getQueryParameter("error_description")
-				val error = uri.getQueryParameter("error")
-				if (!errorDescription.isNullOrBlank() || !error.isNullOrBlank()) {
-					throw IllegalStateException(errorDescription ?: error ?: "Authentication failed")
-				}
-				val code = uri.getQueryParameter("code")
-					?: throw IllegalArgumentException("Missing authorization code")
-				SupabaseProvider.client.auth.exchangeCodeForSession(code)
-			}.onFailure {
-				_authState.value = AuthState.SignedOut
-				_authErrors.tryEmit("Sign-in failed: ${it.message ?: "Unknown error"}")
-			}
-		}
-	}
+	// Removed Uri fallback; relying solely on SDK handleDeeplinks for uniform behavior across providers
 
 	fun signOut() {
 		scope.launch {

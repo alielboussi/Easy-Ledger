@@ -1,6 +1,4 @@
 package com.easyledger.app.feature.auth
-
-import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,7 +19,6 @@ import com.easyledger.app.core.auth.SessionManager
 @Composable
 fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel()) {
     val state by viewModel.authState.collectAsState()
-    val activity = (LocalActivityResultRegistryOwner.current as? androidx.activity.ComponentActivity)
     val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state) {
@@ -39,7 +36,7 @@ fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel
         Column(modifier = androidx.compose.ui.Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center) {
             when (state) {
                 AuthState.Loading -> Text("Loading...")
-                AuthState.SignedOut -> Button(onClick = { activity?.let { viewModel.signInWithGoogle(it) } }) { Text("Sign in with Google") }
+                AuthState.SignedOut -> Button(onClick = { viewModel.signInWithGoogle() }) { Text("Sign in with Google") }
                 is AuthState.SignedIn -> Text("Signed in. Redirecting...")
             }
         }
