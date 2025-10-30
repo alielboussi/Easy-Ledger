@@ -18,6 +18,9 @@ import androidx.navigation.NavController
 import com.easyledger.app.core.data.ProfileRepository
 import com.easyledger.app.core.data.ProfileUpdate
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
+import com.easyledger.app.core.data.CountryData
 import java.time.Instant
 import java.time.ZoneId
 
@@ -79,21 +82,7 @@ fun ProfileScreen(navController: NavController) {
         }
     }
 
-    val countries = remember {
-        listOf(
-            "United States" to "+1",
-            "Canada" to "+1",
-            "United Kingdom" to "+44",
-            "Germany" to "+49",
-            "France" to "+33",
-            "Australia" to "+61",
-            "India" to "+91",
-            "United Arab Emirates" to "+971",
-            "Saudi Arabia" to "+966",
-            "South Africa" to "+27",
-            "Nigeria" to "+234"
-        )
-    }
+    val countries = remember { CountryData.countries }
 
     Scaffold(topBar = { TopAppBar(title = { Text("Profile") }) }) { padding ->
         Box(
@@ -126,18 +115,20 @@ fun ProfileScreen(navController: NavController) {
                         )
                         Spacer(Modifier.height(12.dp))
 
-                        Column {
-                            GlowyField(
-                                value = dateOfBirth,
-                                onValueChange = { dateOfBirth = it },
-                                label = "Date of Birth (YYYY-MM-DD)",
-                                red = red,
-                                glow = glowColor,
-                                readOnly = true,
-                                onClick = { showDatePicker = true }
-                            )
-                            TextButton(onClick = { showDatePicker = true }) { Text("Select Date") }
-                        }
+                        GlowyField(
+                            value = dateOfBirth,
+                            onValueChange = { dateOfBirth = it },
+                            label = "Date of Birth (YYYY-MM-DD)",
+                            red = red,
+                            glow = glowColor,
+                            readOnly = true,
+                            onClick = { showDatePicker = true },
+                            trailingIcon = {
+                                IconButton(onClick = { showDatePicker = true }) {
+                                    Icon(Icons.Filled.DateRange, contentDescription = "Pick date")
+                                }
+                            }
+                        )
                         Spacer(Modifier.height(12.dp))
 
                         // Country dropdown that sets both country and calling code
@@ -155,10 +146,10 @@ fun ProfileScreen(navController: NavController) {
                                 )
                             }
                             DropdownMenu(expanded = countryExpanded, onDismissRequest = { countryExpanded = false }) {
-                                countries.forEach { (c, code) ->
-                                    DropdownMenuItem(text = { Text("$c ($code)") }, onClick = {
-                                        country = c
-                                        countryCode = code
+                                countries.forEach { item ->
+                                    DropdownMenuItem(text = { Text("${item.name} (${item.code})") }, onClick = {
+                                        country = item.name
+                                        countryCode = item.code
                                         countryExpanded = false
                                     })
                                 }
@@ -223,6 +214,7 @@ private fun GlowyField(
     keyboardType: KeyboardType = KeyboardType.Text,
     readOnly: Boolean = false,
     onClick: (() -> Unit)? = null,
+    trailingIcon: (@Composable (() -> Unit))? = null,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -242,7 +234,8 @@ private fun GlowyField(
                 .let { if (onClick != null) it.clickable { onClick() } else it },
             singleLine = true,
             readOnly = readOnly,
-            keyboardOptions = KeyboardOptions(keyboardType = keyboardType)
+            keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+            trailingIcon = trailingIcon
         )
     }
 }

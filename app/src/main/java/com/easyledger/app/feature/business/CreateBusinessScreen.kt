@@ -1,11 +1,15 @@
 package com.easyledger.app.feature.business
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -41,18 +45,24 @@ fun CreateBusinessScreen(navController: NavController, repo: SupabaseBusinessRep
         onResult = { uri -> selectedLogo = uri }
     )
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    val glowColor = Color(0x40FF1744)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(16.dp)
+    ) {
         Text("Create Main Business")
         Spacer(Modifier.height(12.dp))
-        OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Business name") }, modifier = Modifier.fillMaxWidth())
+        GlowyField(value = name, onValueChange = { name = it }, label = "Business name", glow = glowColor)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = primaryCurrency, onValueChange = { primaryCurrency = it }, label = { Text("Primary currency (e.g., USD)") }, modifier = Modifier.fillMaxWidth())
+        GlowyField(value = primaryCurrency, onValueChange = { primaryCurrency = it }, label = "Primary currency (e.g., USD)", glow = glowColor)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = secondaryCurrency, onValueChange = { secondaryCurrency = it }, label = { Text("Secondary currency (optional)") }, modifier = Modifier.fillMaxWidth())
+        GlowyField(value = secondaryCurrency, onValueChange = { secondaryCurrency = it }, label = "Secondary currency (optional)", glow = glowColor)
         Spacer(Modifier.height(8.dp))
-    OutlinedTextField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = { Text("Currency symbol (e.g., \$)") }, modifier = Modifier.fillMaxWidth())
+    GlowyField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = "Currency symbol (e.g., \$)", glow = glowColor)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = currencyFormat, onValueChange = { currencyFormat = it }, label = { Text("Currency format (e.g., #,##0.00)") }, modifier = Modifier.fillMaxWidth())
+        GlowyField(value = currencyFormat, onValueChange = { currencyFormat = it }, label = "Currency format (e.g., #,##0.00)", glow = glowColor)
         Spacer(Modifier.height(16.dp))
 
         if (error != null) {
@@ -122,4 +132,29 @@ fun CreateBusinessScreen(navController: NavController, repo: SupabaseBusinessRep
 private fun Context.readAllBytes(uri: Uri): ByteArray {
     return contentResolver.openInputStream(uri)?.use { it.readBytes() }
         ?: error("Unable to open input stream for URI")
+}
+
+@Composable
+private fun GlowyField(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    label: String,
+    glow: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = glow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            modifier = modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(2.dp),
+            singleLine = true
+        )
+    }
 }

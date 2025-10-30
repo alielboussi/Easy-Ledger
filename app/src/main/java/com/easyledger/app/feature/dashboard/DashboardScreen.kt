@@ -19,5 +19,8 @@ fun DashboardScreen(navController: NavController) {
         Button(onClick = { navController.navigate(Routes.Business.route + "/create") }) {
             Text("Create a Business")
         }
+        Button(onClick = { navController.navigate(Routes.Profile.route) }) {
+            Text("Edit Profile")
+        }
     }
 }

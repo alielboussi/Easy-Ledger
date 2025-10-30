@@ -19,6 +19,13 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -41,9 +48,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DateRange
 import com.easyledger.app.core.auth.AuthState
 import com.easyledger.app.core.auth.SessionManager
+import com.easyledger.app.core.data.CountryData
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel()) {
     val state by viewModel.authState.collectAsState()
@@ -76,6 +87,7 @@ fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AuthForm(viewModel: AuthViewModel) {
     var mode by remember { mutableStateOf(AuthMode.SignIn) }
@@ -83,6 +95,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var dateOfBirth by remember { mutableStateOf("") } // YYYY-MM-DD
+    var showDatePicker by remember { mutableStateOf(false) }
     var country by remember { mutableStateOf("") }
     var countryExpanded by remember { mutableStateOf(false) }
     var selectedCountryCode by remember { mutableStateOf("+1") }
@@ -126,14 +139,23 @@ private fun AuthForm(viewModel: AuthViewModel) {
                         label = "Date of Birth (YYYY-MM-DD)",
                         keyboardType = KeyboardType.Text,
                         red = red,
-                        glow = glowColor
+                        glow = glowColor,
+                        readOnly = true,
+                        trailingIcon = {
+                            IconButton(onClick = { showDatePicker = true }) {
+                                Icon(Icons.Filled.DateRange, contentDescription = "Pick date")
+                            }
+                        }
                     )
                     Spacer(Modifier.height(12.dp))
                     // Country dropdown
                     CountryDropdown(
                         label = "Country",
                         selected = country,
-                        onSelected = { country = it },
+                        onSelected = { name, code ->
+                            country = name
+                            selectedCountryCode = code
+                        },
                         expanded = countryExpanded,
                         onExpandedChange = { countryExpanded = it },
                         red = red,
@@ -210,7 +232,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
         }
 
         Spacer(Modifier.height(24.dp))
-        Divider(color = Color(0xFFE0E0E0))
+    androidx.compose.material3.HorizontalDivider(color = Color(0xFFE0E0E0))
         Spacer(Modifier.height(16.dp))
 
         Button(
@@ -225,9 +247,41 @@ private fun AuthForm(viewModel: AuthViewModel) {
         Spacer(Modifier.height(8.dp))
         Spacer(Modifier.height(16.dp))
     }
+
+    // Date picker dialog for DOB
+    DatePickerHost(
+        show = showDatePicker,
+        onDismiss = { showDatePicker = false },
+        onDateSelected = { dateOfBirth = it }
+    )
 }
 
 private enum class AuthMode { SignIn, SignUp }
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun DatePickerHost(show: Boolean, onDismiss: () -> Unit, onDateSelected: (String) -> Unit) {
+    if (!show) return
+    val pickerState = androidx.compose.material3.rememberDatePickerState()
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(onClick = {
+                val selected = pickerState.selectedDateMillis
+                if (selected != null) {
+                    val ld = java.time.Instant.ofEpochMilli(selected)
+                        .atZone(java.time.ZoneId.systemDefault())
+                        .toLocalDate()
+                    onDateSelected(ld.toString())
+                }
+                onDismiss()
+            }) { Text("OK") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    ) {
+        DatePicker(state = pickerState)
+    }
+}
 
 @Composable
 private fun GlowyField(
@@ -237,7 +291,9 @@ private fun GlowyField(
     keyboardType: KeyboardType = KeyboardType.Text,
     isPassword: Boolean = false,
     red: Color,
-    glow: Color
+    glow: Color,
+    readOnly: Boolean = false,
+    trailingIcon: (@Composable (() -> Unit))? = null
 ) {
     // Simulate glow using an outer card with translucent red, then an OutlinedTextField
     Card(
@@ -254,8 +310,10 @@ private fun GlowyField(
                 .background(Color.White)
                 .padding(2.dp),
             singleLine = true,
+            readOnly = readOnly,
             keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else keyboardType),
-            visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None
+            visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+            trailingIcon = trailingIcon
         )
     }
 }
@@ -264,17 +322,13 @@ private fun GlowyField(
 private fun CountryDropdown(
     label: String,
     selected: String,
-    onSelected: (String) -> Unit,
+    onSelected: (String, String) -> Unit,
     expanded: Boolean,
     onExpandedChange: (Boolean) -> Unit,
     red: Color,
     glow: Color
 ) {
-    val countries = remember {
-        listOf(
-            "United States", "Canada", "United Kingdom", "Germany", "France", "Australia", "India", "United Arab Emirates", "Saudi Arabia", "South Africa", "Nigeria"
-        )
-    }
+    val countries = remember { com.easyledger.app.core.data.CountryData.countries }
     Card(
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = glow),
@@ -298,12 +352,12 @@ private fun CountryDropdown(
                 contentAlignment = Alignment.CenterStart
             ) {}
         }
-        androidx.compose.material3.DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
+        DropdownMenu(expanded = expanded, onDismissRequest = { onExpandedChange(false) }) {
             countries.forEach { c ->
-                androidx.compose.material3.DropdownMenuItem(
-                    text = { Text(c) },
+                DropdownMenuItem(
+                    text = { Text("${c.name} (${c.code})") },
                     onClick = {
-                        onSelected(c)
+                        onSelected(c.name, c.code)
                         onExpandedChange(false)
                     }
                 )
@@ -325,7 +379,7 @@ private fun PhoneWithCode(
     red: Color,
     glow: Color
 ) {
-    val codes = remember { listOf("+1", "+44", "+49", "+33", "+61", "+91", "+971", "+966", "+27", "+234") }
+    val codes = remember { CountryData.countries.map { it.code }.distinct() }
 
     RowWithSpacing {
         Card(shape = RoundedCornerShape(12.dp), colors = CardDefaults.cardColors(containerColor = glow), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
@@ -338,9 +392,9 @@ private fun PhoneWithCode(
                     readOnly = true
                 )
             }
-            androidx.compose.material3.DropdownMenu(expanded = codeExpanded, onDismissRequest = { onCodeExpandedChange(false) }) {
+            DropdownMenu(expanded = codeExpanded, onDismissRequest = { onCodeExpandedChange(false) }) {
                 codes.forEach { code ->
-                    androidx.compose.material3.DropdownMenuItem(text = { Text(code) }, onClick = {
+                    DropdownMenuItem(text = { Text(code) }, onClick = {
                         onCodeSelected(code)
                         onCodeExpandedChange(false)
                     })

@@ -11,6 +11,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -23,6 +25,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.background
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.easyledger.app.core.data.SupabaseBusinessRepository
@@ -97,7 +101,13 @@ fun BusinessDetailScreen(navController: NavController, businessId: String, repo:
         return
     }
 
-    Column(Modifier.fillMaxSize().padding(16.dp)) {
+    val glowColor = Color(0x40FF1744)
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .padding(16.dp)
+    ) {
         SnackbarHost(snackbarHostState)
         Text("Business Details", style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
@@ -119,36 +129,36 @@ fun BusinessDetailScreen(navController: NavController, businessId: String, repo:
             s.isNotBlank() && (s.length !in 3..4 || s.equals(primaryCurrency.text, ignoreCase = true))
         }
 
-        OutlinedTextField(
+        GlowyField(
             value = name,
             onValueChange = { name = it },
-            label = { Text("Business name") },
+            label = "Business name",
             isError = nameError,
-            supportingText = { if (nameError) Text("Name is required") },
-            modifier = Modifier.fillMaxWidth()
+            supportingText = if (nameError) "Name is required" else null,
+            glow = glowColor
         )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
+        GlowyField(
             value = primaryCurrency,
             onValueChange = { primaryCurrency = it },
-            label = { Text("Primary currency (3-4 letters)") },
+            label = "Primary currency (3-4 letters)",
             isError = primaryCurrencyError,
-            supportingText = { if (primaryCurrencyError) Text("3-4 letters, e.g., USD") },
-            modifier = Modifier.fillMaxWidth()
+            supportingText = if (primaryCurrencyError) "3-4 letters, e.g., USD" else null,
+            glow = glowColor
         )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(
+        GlowyField(
             value = secondaryCurrency,
             onValueChange = { secondaryCurrency = it },
-            label = { Text("Secondary currency (optional)") },
+            label = "Secondary currency (optional)",
             isError = secondaryCurrencyError,
-            supportingText = { if (secondaryCurrencyError) Text("Must be 3-4 letters and different from primary") },
-            modifier = Modifier.fillMaxWidth()
+            supportingText = if (secondaryCurrencyError) "Must be 3-4 letters and different from primary" else null,
+            glow = glowColor
         )
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = { Text("Currency symbol") }, modifier = Modifier.fillMaxWidth())
+        GlowyField(value = currencySymbol, onValueChange = { currencySymbol = it }, label = "Currency symbol", glow = glowColor)
         Spacer(Modifier.height(8.dp))
-        OutlinedTextField(value = currencyFormat, onValueChange = { currencyFormat = it }, label = { Text("Currency format") }, modifier = Modifier.fillMaxWidth())
+        GlowyField(value = currencyFormat, onValueChange = { currencyFormat = it }, label = "Currency format", glow = glowColor)
         Spacer(Modifier.height(16.dp))
 
         if (error != null) {
@@ -442,4 +452,33 @@ fun BusinessDetailScreen(navController: NavController, businessId: String, repo:
 
 private fun Context.readAllBytes(uri: Uri): ByteArray {
     return contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: error("Unable to open input stream for URI")
+}
+
+@Composable
+private fun GlowyField(
+    value: TextFieldValue,
+    onValueChange: (TextFieldValue) -> Unit,
+    label: String,
+    isError: Boolean = false,
+    supportingText: String? = null,
+    glow: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = glow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { Text(label) },
+            modifier = modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(2.dp),
+            singleLine = true,
+            isError = isError,
+            supportingText = { if (supportingText != null) Text(supportingText) }
+        )
+    }
 }
