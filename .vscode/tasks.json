@@ -1,0 +1,82 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Assemble Debug after auth screen changes",
+			"type": "shell",
+			"command": "c:\\Projects\\EasyLedger\\gradlew.bat :app:assembleDebug -x lint",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Assemble Debug after signup field additions",
+			"type": "shell",
+			"command": "c:\\Projects\\EasyLedger\\gradlew.bat :app:assembleDebug -x lint",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Assemble Debug after username login",
+			"type": "shell",
+			"command": "c:\\Projects\\EasyLedger\\gradlew.bat :app:assembleDebug -x lint",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Assemble Debug after profile screen",
+			"type": "shell",
+			"command": "c:\\Projects\\EasyLedger\\gradlew.bat :app:assembleDebug -x lint",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Assemble Debug after auth/profile fixes",
+			"type": "shell",
+			"command": "c:\\Projects\\EasyLedger\\gradlew.bat :app:assembleDebug -x lint",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Assemble Debug after fixing decodeSingleOrNull",
+			"type": "shell",
+			"command": "c:\\Projects\\EasyLedger\\gradlew.bat :app:assembleDebug -x lint",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		},
+		{
+			"label": "Assemble Debug after restyle ProfileScreen",
+			"type": "shell",
+			"command": "c:\\Projects\\EasyLedger\\gradlew.bat :app:assembleDebug -x lint",
+			"args": [],
+			"isBackground": false,
+			"problemMatcher": [
+				"$gradle"
+			],
+			"group": "build"
+		}
+	]
+}

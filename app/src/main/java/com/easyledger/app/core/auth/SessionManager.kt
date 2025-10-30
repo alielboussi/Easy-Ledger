@@ -3,7 +3,9 @@ package com.easyledger.app.core.auth
 import android.content.Intent
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.Google
+import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.status.SessionStatus
+import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,6 +15,9 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import com.easyledger.app.core.supabase.SupabaseProvider
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import kotlinx.serialization.Serializable
 
 sealed class AuthState {
 	data object Loading: AuthState()
@@ -61,6 +66,59 @@ object SessionManager {
 				SupabaseProvider.client.auth.signInWith(Google)
 			}.onFailure {
 				_authErrors.tryEmit("Couldn't start Google sign-in: ${it.message ?: "Unknown error"}")
+			}
+		}
+	}
+
+	@Serializable
+	private data class ProfileEmail(val email: String)
+
+	fun signInWithUsername(username: String, password: String) {
+		scope.launch {
+			runCatching {
+				val result = SupabaseProvider.client.postgrest["profiles"].select {
+					filter { eq("username", username) }
+				}.decodeSingle<ProfileEmail>()
+				SupabaseProvider.client.auth.signInWith(Email) {
+					this.email = result.email
+					this.password = password
+				}
+			}.onFailure {
+				_authErrors.tryEmit("Username sign-in failed: ${it.message ?: "Unknown error"}")
+			}
+		}
+	}
+
+	fun signInWithEmail(email: String, password: String) {
+		scope.launch {
+			runCatching {
+				SupabaseProvider.client.auth.signInWith(Email) {
+					this.email = email
+					this.password = password
+				}
+			}.onFailure {
+				_authErrors.tryEmit("Email sign-in failed: ${it.message ?: "Unknown error"}")
+			}
+		}
+	}
+
+	fun signUpWithEmail(username: String, email: String, password: String, dateOfBirth: String?, country: String?, countryCode: String?, phone: String?) {
+		scope.launch {
+			runCatching {
+				SupabaseProvider.client.auth.signUpWith(Email) {
+					this.email = email
+					this.password = password
+					// save username in user_metadata
+					data = buildJsonObject {
+						put("username", username)
+						if (!dateOfBirth.isNullOrBlank()) put("date_of_birth", dateOfBirth)
+						if (!country.isNullOrBlank()) put("country", country)
+						if (!countryCode.isNullOrBlank()) put("country_code", countryCode)
+						if (!phone.isNullOrBlank()) put("phone", phone)
+					}
+				}
+			}.onFailure {
+				_authErrors.tryEmit("Sign-up failed: ${it.message ?: "Unknown error"}")
 			}
 		}
 	}

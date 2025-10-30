@@ -20,6 +20,7 @@ sealed class Routes(val route: String) {
     data object BusinessDetail: Routes("business/detail/{id}")
     data object Reports: Routes("reports")
     data object Settings: Routes("settings")
+    data object Profile: Routes("profile")
 }
 
 @Composable
@@ -36,5 +37,6 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
         }
         composable(Routes.Reports.route) { ReportsScreen(navController) }
         composable(Routes.Settings.route) { SettingsScreen(navController) }
+        composable(Routes.Profile.route) { com.easyledger.app.feature.profile.ProfileScreen(navController) }
     }
 }

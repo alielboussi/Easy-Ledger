@@ -1,6 +1,7 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
-    id("com.android.application") version "8.6.1"
+    id("com.android.application") version "8.13.0"
     id("org.jetbrains.kotlin.android") version "2.2.21"
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.21"
     // Required with Kotlin 2.x when Compose is enabled
@@ -63,8 +64,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
         isCoreLibraryDesugaringEnabled = true
     }
-    kotlinOptions {
-        jvmTarget = "17"
+    // Kotlin 2.x: use compilerOptions DSL instead of deprecated kotlinOptions.jvmTarget
+}
+
+kotlin {
+    jvmToolchain(17)
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 

@@ -22,6 +22,8 @@ object SupabaseProvider {
                 flowType = FlowType.PKCE
                 // Open OAuth in Chrome Custom Tabs on Android
                 defaultExternalAuthAction = ExternalAuthAction.CustomTabs()
+                // NOTE: In Supabase Dashboard, enable the Google provider and add the redirect URL:
+                // easyledger://auth-callback
             }
             install(io.github.jan.supabase.postgrest.Postgrest)
             install(io.github.jan.supabase.storage.Storage)

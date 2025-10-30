@@ -19,6 +19,26 @@ class AuthViewModel : ViewModel() {
         }
     }
 
+    fun signInWithEmail(email: String, password: String) {
+        viewModelScope.launch { SessionManager.signInWithEmail(email, password) }
+    }
+
+    fun signInWithUsername(username: String, password: String) {
+        viewModelScope.launch { SessionManager.signInWithUsername(username, password) }
+    }
+
+    fun signUpWithEmail(
+        username: String,
+        email: String,
+        password: String,
+        dateOfBirth: String?,
+        country: String?,
+        countryCode: String?,
+        phone: String?
+    ) {
+        viewModelScope.launch { SessionManager.signUpWithEmail(username, email, password, dateOfBirth, country, countryCode, phone) }
+    }
+
     fun signOut() {
         viewModelScope.launch { SessionManager.signOut() }
     }
