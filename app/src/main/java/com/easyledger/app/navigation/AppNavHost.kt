@@ -26,7 +26,11 @@ sealed class Routes(val route: String) {
 @Composable
 fun AppNavHost(navController: NavHostController = rememberNavController()) {
     NavHost(navController = navController, startDestination = Routes.Auth.route) {
-        composable(Routes.Auth.route) { AuthScreen(onAuthenticated = { navController.navigate(Routes.Dashboard.route) { popUpTo(Routes.Auth.route) { inclusive = true } } }) }
+        composable(Routes.Auth.route) {
+            AuthScreen(
+                onAuthenticated = { navController.navigate(Routes.Dashboard.route) { popUpTo(Routes.Auth.route) { inclusive = true } } }
+            )
+        }
         composable(Routes.Dashboard.route) { DashboardScreen(navController) }
         composable(Routes.Business.route) { BusinessScreen(navController) }
         composable(Routes.Business.route + "/list") { com.easyledger.app.feature.business.BusinessListScreen(navController) }

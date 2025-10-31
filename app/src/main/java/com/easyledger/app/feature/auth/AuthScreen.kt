@@ -78,7 +78,7 @@ fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel
 
     Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { padding ->
         Box(
-                AuthState.SignedOut -> GoogleOnlyAuth(viewModel)
+            modifier = Modifier
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(padding)
@@ -86,7 +86,15 @@ fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel
             when (state) {
                 AuthState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Loading...") }
                 is AuthState.SignedIn -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Signed in. Redirecting...") }
-private fun GoogleOnlyAuth(viewModel: AuthViewModel) {
+                AuthState.SignedOut -> AuthForm(viewModel)
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AuthForm(viewModel: AuthViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -96,14 +104,10 @@ private fun GoogleOnlyAuth(viewModel: AuthViewModel) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text("Easy Ledger", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = Color.Black)
-        Spacer(Modifier.height(24.dp))
-        Text("Sign in to continue", color = Color.Black)
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(32.dp))
         OfficialGoogleSignInButton { viewModel.signInWithGoogle() }
-    }
-}
-        Spacer(Modifier.height(8.dp))
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(12.dp))
+        Text("Continue with Google", color = Color.Gray)
     }
 
     // No DOB picker
@@ -131,7 +135,7 @@ private fun OfficialGoogleSignInButton(onClick: () -> Unit) {
     )
 }
 
-// Email/password and sign-up removed: Google-only auth
+private enum class AuthMode { SignIn, SignUp }
 
 @Composable
 private fun FieldHeader(text: String) {
