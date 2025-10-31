@@ -1,10 +1,12 @@
 package com.easyledger.app.feature.auth
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -18,7 +20,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -41,15 +42,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.easyledger.app.core.auth.AuthState
 import com.easyledger.app.core.auth.SessionManager
 import com.easyledger.app.core.data.CountryData
 import androidx.compose.ui.viewinterop.AndroidView
 import com.google.android.gms.common.SignInButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.padding as paddingAlias
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,10 +100,10 @@ private fun AuthForm(viewModel: AuthViewModel) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     // DOB removed from sign-up flow
-    var country by remember { mutableStateOf("") }
-    var countryExpanded by remember { mutableStateOf(false) }
+    // Integrated phone selector state
+    var selectedCountryName by remember { mutableStateOf("") }
     var selectedCountryCode by remember { mutableStateOf("+1") }
-    var codeExpanded by remember { mutableStateOf(false) }
+    var selectedCountryIso2 by remember { mutableStateOf("US") }
     var phone by remember { mutableStateOf("") }
 
     val red = Color(0xFFB00020)
@@ -121,6 +129,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
         ) {
             Column(Modifier.padding(20.dp)) {
                 if (mode == AuthMode.SignUp) {
+                    FieldHeader("Username")
                     GlowyField(
                         value = username,
                         onValueChange = { username = it },
@@ -130,27 +139,16 @@ private fun AuthForm(viewModel: AuthViewModel) {
                         textColor = Color.Black
                     )
                     Spacer(Modifier.height(12.dp))
-                    
-                    // Country dropdown
-                    CountryDropdown(
-                        label = "Country",
-                        selected = country,
-                        onSelected = { name, code ->
-                            country = name
+                    FieldHeader("Phone")
+                    PhoneNumberField(
+                        countryName = selectedCountryName,
+                        countryCode = selectedCountryCode,
+                        countryIso2 = selectedCountryIso2,
+                        onCountrySelected = { name, code, iso2 ->
+                            selectedCountryName = name
                             selectedCountryCode = code
+                            selectedCountryIso2 = iso2
                         },
-                        expanded = countryExpanded,
-                        onExpandedChange = { countryExpanded = it },
-                        red = red,
-                        glow = glowColor
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    // Phone with country code dropdown
-                    PhoneWithCode(
-                        selectedCode = selectedCountryCode,
-                        onCodeSelected = { selectedCountryCode = it },
-                        codeExpanded = codeExpanded,
-                        onCodeExpandedChange = { codeExpanded = it },
                         phone = phone,
                         onPhoneChange = { phone = it },
                         red = red,
@@ -159,6 +157,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
                     Spacer(Modifier.height(12.dp))
                 }
 
+                FieldHeader(if (mode == AuthMode.SignIn) "Email or Username" else "Email")
                 GlowyField(
                     value = email,
                     onValueChange = { email = it },
@@ -170,6 +169,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
                 )
                 Spacer(Modifier.height(12.dp))
 
+                FieldHeader("Password")
                 GlowyField(
                     value = password,
                     onValueChange = { password = it },
@@ -197,7 +197,7 @@ private fun AuthForm(viewModel: AuthViewModel) {
                                 username.trim(),
                                 email.trim(),
                                 password,
-                                country.trim().ifBlank { null },
+                                selectedCountryName.trim().ifBlank { null },
                                 selectedCountryCode.trim().ifBlank { null },
                                 phone.trim().ifBlank { null }
                             )
@@ -211,7 +211,8 @@ private fun AuthForm(viewModel: AuthViewModel) {
                 }
 
                 TextButton(onClick = { mode = if (mode == AuthMode.SignIn) AuthMode.SignUp else AuthMode.SignIn }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    Text(if (mode == AuthMode.SignIn) "No account? Sign up" else "Have an account? Sign in")
+                    val linkText = if (mode == AuthMode.SignIn) "No account? Sign up" else "Have an account? Sign in"
+                    Text(linkText, color = red, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
             }
         }
@@ -254,6 +255,16 @@ private fun OfficialGoogleSignInButton(onClick: () -> Unit) {
 }
 
 private enum class AuthMode { SignIn, SignUp }
+
+@Composable
+private fun FieldHeader(text: String) {
+    Text(
+        text,
+        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+        color = Color.Black,
+        modifier = Modifier.padding(bottom = 6.dp)
+    )
+}
 
 @Composable
 private fun GlowyField(
@@ -414,6 +425,94 @@ private fun PhoneWithCode(
             )
         }
     }
+}
+
+@Composable
+private fun PhoneNumberField(
+    countryName: String,
+    countryCode: String,
+    countryIso2: String,
+    onCountrySelected: (String, String, String) -> Unit,
+    phone: String,
+    onPhoneChange: (String) -> Unit,
+    red: Color,
+    glow: Color
+) {
+    val countries = remember { CountryData.countries }
+    val countriesSorted = remember { countries.sortedWith(compareBy({ baseCallingCodeInt(it.code) }, { it.name })) }
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = glow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        OutlinedTextField(
+            value = phone,
+            onValueChange = onPhoneChange,
+            label = { Text("Phone number") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(8.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            prefix = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { expanded = true }
+                ) {
+                    Text(flagEmoji(countryIso2), fontSize = 18.sp)
+                    Spacer(Modifier.width(6.dp))
+                    Text(countryCode, color = Color.Black)
+                    androidx.compose.material3.Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = "Change country code",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(18.dp).padding(start = 4.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = red,
+                unfocusedBorderColor = red,
+                focusedLabelColor = red,
+                cursorColor = red
+            )
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            countriesSorted.forEach { c ->
+                DropdownMenuItem(
+                    text = { Text("${flagEmoji(c.iso2)} ${c.name} (${c.code})") },
+                    onClick = {
+                        onCountrySelected(c.name, c.code, c.iso2)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun flagEmoji(iso2: String): String {
+    if (iso2.length != 2) return "�️"
+    val first = Character.codePointAt(iso2.uppercase(), 0) - 0x41 + 0x1F1E6
+    val second = Character.codePointAt(iso2.uppercase(), 1) - 0x41 + 0x1F1E6
+    return String(Character.toChars(first)) + String(Character.toChars(second))
+}
+
+private fun baseCallingCodeInt(code: String): Int {
+    // Extract digits after '+' until a non-digit or end (so '+1-684' => 1)
+    val start = code.indexOf('+') + 1
+    if (start <= 0 || start >= code.length) return Int.MAX_VALUE
+    var i = start
+    val sb = StringBuilder()
+    while (i < code.length && code[i].isDigit()) {
+        sb.append(code[i])
+        i++
+    }
+    return sb.toString().toIntOrNull() ?: Int.MAX_VALUE
 }
 
 @Composable

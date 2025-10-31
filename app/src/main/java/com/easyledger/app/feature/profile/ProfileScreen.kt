@@ -9,6 +9,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.ui.unit.sp
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +40,7 @@ fun ProfileScreen(navController: NavController) {
     var username by remember { mutableStateOf("") }
     var country by remember { mutableStateOf("") }
     var countryCode by remember { mutableStateOf("") }
+    var countryIso2 by remember { mutableStateOf("US") }
     var phone by remember { mutableStateOf("") }
 
     var countryExpanded by remember { mutableStateOf(false) }
@@ -85,6 +91,7 @@ fun ProfileScreen(navController: NavController) {
                             Spacer(Modifier.height(12.dp))
                         }
 
+                        Text("Username", style = MaterialTheme.typography.labelLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = Color.Black, modifier = Modifier.padding(bottom = 6.dp))
                         GlowyField(
                             value = username,
                             onValueChange = { username = it },
@@ -94,61 +101,22 @@ fun ProfileScreen(navController: NavController) {
                         )
                         Spacer(Modifier.height(12.dp))
 
-                        // DOB removed from profile UI
-
-                        // Country dropdown that sets both country and calling code
-                        Card(shape = shape, colors = CardDefaults.cardColors(containerColor = glowColor), elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)) {
-                            Box(Modifier.fillMaxWidth().background(Color.White)) {
-                                OutlinedTextField(
-                                    value = if (country.isBlank()) "" else "$country ($countryCode)",
-                                    onValueChange = {},
-                                    label = { Text("Country") },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(8.dp)
-                                        .clickable { countryExpanded = true },
-                                    readOnly = true,
-                                    colors = OutlinedTextFieldDefaults.colors(
-                                        focusedBorderColor = red,
-                                        unfocusedBorderColor = red,
-                                        focusedLabelColor = red,
-                                        cursorColor = red
-                                    )
-                                )
-                            }
-                            DropdownMenu(expanded = countryExpanded, onDismissRequest = { countryExpanded = false }) {
-                                countries.forEach { item ->
-                                    DropdownMenuItem(text = { Text("${item.name} (${item.code})") }, onClick = {
-                                        country = item.name
-                                        countryCode = item.code
-                                        countryExpanded = false
-                                    })
-                                }
-                            }
-                        }
-
-                        Spacer(Modifier.height(12.dp))
-
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-                            GlowyField(
-                                value = countryCode,
-                                onValueChange = { countryCode = it },
-                                label = "Code",
-                                red = red,
-                                glow = glowColor,
-                                keyboardType = KeyboardType.Text,
-                                modifier = Modifier.weight(0.35f)
-                            )
-                            GlowyField(
-                                value = phone,
-                                onValueChange = { phone = it },
-                                label = "Phone",
-                                red = red,
-                                glow = glowColor,
-                                keyboardType = KeyboardType.Phone,
-                                modifier = Modifier.weight(0.65f)
-                            )
-                        }
+                        // Integrated phone number field with country code dropdown
+                        Text("Phone", style = MaterialTheme.typography.labelLarge.copy(fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold), color = Color.Black, modifier = Modifier.padding(bottom = 6.dp))
+                        PhoneNumberField(
+                            countryName = country,
+                            countryCode = countryCode.ifBlank { "+1" },
+                            countryIso2 = countryIso2,
+                            onCountrySelected = { name, code, iso2 ->
+                                country = name
+                                countryCode = code
+                                countryIso2 = iso2
+                            },
+                            phone = phone,
+                            onPhoneChange = { phone = it },
+                            red = red,
+                            glow = glowColor
+                        )
 
                         Spacer(Modifier.height(20.dp))
                         Button(
@@ -172,6 +140,93 @@ fun ProfileScreen(navController: NavController) {
             }
         }
     }
+}
+
+@Composable
+private fun PhoneNumberField(
+    countryName: String,
+    countryCode: String,
+    countryIso2: String,
+    onCountrySelected: (String, String, String) -> Unit,
+    phone: String,
+    onPhoneChange: (String) -> Unit,
+    red: Color,
+    glow: Color
+) {
+    val countries = remember { com.easyledger.app.core.data.CountryData.countries }
+    val countriesSorted = remember { countries.sortedWith(compareBy({ baseCallingCodeInt(it.code) }, { it.name })) }
+    var expanded by remember { mutableStateOf(false) }
+
+    Card(
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = glow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        OutlinedTextField(
+            value = phone,
+            onValueChange = onPhoneChange,
+            label = { Text("Phone number") },
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(Color.White)
+                .padding(8.dp),
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            prefix = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable { expanded = true }
+                ) {
+                    Text(flagEmoji(countryIso2), fontSize = 18.sp)
+                    Spacer(Modifier.width(6.dp))
+                    Text(countryCode, color = Color.Black)
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDropDown,
+                        contentDescription = "Change country code",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(18.dp).padding(start = 4.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedBorderColor = red,
+                unfocusedBorderColor = red,
+                focusedLabelColor = red,
+                cursorColor = red
+            )
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            countriesSorted.forEach { c ->
+                DropdownMenuItem(
+                    text = { Text("${flagEmoji(c.iso2)} ${c.name} (${c.code})") },
+                    onClick = {
+                        onCountrySelected(c.name, c.code, c.iso2)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+private fun flagEmoji(iso2: String): String {
+    if (iso2.length != 2) return "�️"
+    val first = Character.codePointAt(iso2.uppercase(), 0) - 0x41 + 0x1F1E6
+    val second = Character.codePointAt(iso2.uppercase(), 1) - 0x41 + 0x1F1E6
+    return String(Character.toChars(first)) + String(Character.toChars(second))
+}
+
+private fun baseCallingCodeInt(code: String): Int {
+    val start = code.indexOf('+') + 1
+    if (start <= 0 || start >= code.length) return Int.MAX_VALUE
+    var i = start
+    val sb = StringBuilder()
+    while (i < code.length && code[i].isDigit()) {
+        sb.append(code[i])
+        i++
+    }
+    return sb.toString().toIntOrNull() ?: Int.MAX_VALUE
 }
 
 @Composable
