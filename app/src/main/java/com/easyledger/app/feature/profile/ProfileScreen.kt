@@ -194,7 +194,8 @@ private fun PhoneNumberField(
                 unfocusedBorderColor = red,
                 focusedLabelColor = red,
                 cursorColor = red
-            )
+            ),
+            textStyle = LocalTextStyle.current.copy(color = Color.Black)
         )
         DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             countriesSorted.forEach { c ->
@@ -266,7 +267,8 @@ private fun GlowyField(
                 unfocusedBorderColor = red,
                 focusedLabelColor = red,
                 cursorColor = red
-            )
+            ),
+            textStyle = LocalTextStyle.current.copy(color = Color.Black)
         )
     }
 }

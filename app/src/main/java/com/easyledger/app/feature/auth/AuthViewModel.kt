@@ -8,6 +8,8 @@ import kotlinx.coroutines.launch
 
 class AuthViewModel : ViewModel() {
     val authState: StateFlow<AuthState> = SessionManager.authState
+    private var pendingEmail: String? = null
+    private var pendingPassword: String? = null
 
     init {
         SessionManager.initialize()
@@ -35,7 +37,17 @@ class AuthViewModel : ViewModel() {
         countryCode: String?,
         phone: String?
     ) {
+        pendingEmail = email
+        pendingPassword = password
         viewModelScope.launch { SessionManager.signUpWithEmail(username, email, password, country, countryCode, phone) }
+    }
+
+    fun completePendingEmailSignIn() {
+        val e = pendingEmail ?: return
+        val p = pendingPassword ?: return
+        viewModelScope.launch { SessionManager.signInWithEmail(e, p) }
+        pendingEmail = null
+        pendingPassword = null
     }
 
     fun signOut() {

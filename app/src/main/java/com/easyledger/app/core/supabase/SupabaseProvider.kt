@@ -8,6 +8,7 @@ import io.github.jan.supabase.auth.FlowType
 import io.github.jan.supabase.auth.ExternalAuthAction
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.storage.storage
+import io.github.jan.supabase.functions.functions
 
 object SupabaseProvider {
     private val SUPABASE_URL: String get() = BuildConfig.SUPABASE_URL
@@ -27,6 +28,7 @@ object SupabaseProvider {
             }
             install(io.github.jan.supabase.postgrest.Postgrest)
             install(io.github.jan.supabase.storage.Storage)
+            install(io.github.jan.supabase.functions.Functions)
         }
     }
 }

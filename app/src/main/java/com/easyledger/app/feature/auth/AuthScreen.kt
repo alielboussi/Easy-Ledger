@@ -78,7 +78,7 @@ fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel
 
     Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { padding ->
         Box(
-            modifier = Modifier
+                AuthState.SignedOut -> GoogleOnlyAuth(viewModel)
                 .fillMaxSize()
                 .background(Color.White)
                 .padding(padding)
@@ -86,30 +86,7 @@ fun AuthScreen(onAuthenticated: () -> Unit, viewModel: AuthViewModel = viewModel
             when (state) {
                 AuthState.Loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Loading...") }
                 is AuthState.SignedIn -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { Text("Signed in. Redirecting...") }
-                AuthState.SignedOut -> AuthForm(viewModel)
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun AuthForm(viewModel: AuthViewModel) {
-    var mode by remember { mutableStateOf(AuthMode.SignIn) }
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    // DOB removed from sign-up flow
-    // Integrated phone selector state
-    var selectedCountryName by remember { mutableStateOf("") }
-    var selectedCountryCode by remember { mutableStateOf("+1") }
-    var selectedCountryIso2 by remember { mutableStateOf("US") }
-    var phone by remember { mutableStateOf("") }
-
-    val red = Color(0xFFB00020)
-    val glowColor = Color(0x66B00020) // thicker translucent red glow
-    val shape = RoundedCornerShape(12.dp)
-
+private fun GoogleOnlyAuth(viewModel: AuthViewModel) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -118,113 +95,13 @@ private fun AuthForm(viewModel: AuthViewModel) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-    Text("Easy Ledger", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = Color.Black)
+        Text("Easy Ledger", style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold), color = Color.Black)
         Spacer(Modifier.height(24.dp))
-
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = shape,
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFFDFDFD)),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-        ) {
-            Column(Modifier.padding(20.dp)) {
-                if (mode == AuthMode.SignUp) {
-                    FieldHeader("Username")
-                    GlowyField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = "Username",
-                        red = red,
-                        glow = glowColor,
-                        textColor = Color.Black
-                    )
-                    Spacer(Modifier.height(12.dp))
-                    FieldHeader("Phone")
-                    PhoneNumberField(
-                        countryName = selectedCountryName,
-                        countryCode = selectedCountryCode,
-                        countryIso2 = selectedCountryIso2,
-                        onCountrySelected = { name, code, iso2 ->
-                            selectedCountryName = name
-                            selectedCountryCode = code
-                            selectedCountryIso2 = iso2
-                        },
-                        phone = phone,
-                        onPhoneChange = { phone = it },
-                        red = red,
-                        glow = glowColor
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-
-                FieldHeader(if (mode == AuthMode.SignIn) "Email or Username" else "Email")
-                GlowyField(
-                    value = email,
-                    onValueChange = { email = it },
-                    label = if (mode == AuthMode.SignIn) "Email or Username" else "Email",
-                    keyboardType = KeyboardType.Email,
-                    red = red,
-                    glow = glowColor,
-                    textColor = if (mode == AuthMode.SignIn) Color.Black else null
-                )
-                Spacer(Modifier.height(12.dp))
-
-                FieldHeader("Password")
-                GlowyField(
-                    value = password,
-                    onValueChange = { password = it },
-                    label = "Password",
-                    keyboardType = KeyboardType.Password,
-                    isPassword = true,
-                    red = red,
-                    glow = glowColor,
-                    textColor = Color.Black
-                )
-
-                Spacer(Modifier.height(20.dp))
-
-                Button(
-                    onClick = {
-                        if (mode == AuthMode.SignIn) {
-                            val input = email.trim()
-                            if ("@" in input) {
-                                viewModel.signInWithEmail(input, password)
-                            } else {
-                                viewModel.signInWithUsername(input, password)
-                            }
-                        } else {
-                            viewModel.signUpWithEmail(
-                                username.trim(),
-                                email.trim(),
-                                password,
-                                selectedCountryName.trim().ifBlank { null },
-                                selectedCountryCode.trim().ifBlank { null },
-                                phone.trim().ifBlank { null }
-                            )
-                        }
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    contentPadding = PaddingValues(vertical = 14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = red, contentColor = Color.White)
-                ) {
-                    Text(if (mode == AuthMode.SignIn) "Sign In" else "Create Account")
-                }
-
-                TextButton(onClick = { mode = if (mode == AuthMode.SignIn) AuthMode.SignUp else AuthMode.SignIn }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
-                    val linkText = if (mode == AuthMode.SignIn) "No account? Sign up" else "Have an account? Sign in"
-                    Text(linkText, color = red, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-                }
-            }
-        }
-
-        Spacer(Modifier.height(24.dp))
-    androidx.compose.material3.HorizontalDivider(color = Color(0xFFE0E0E0))
+        Text("Sign in to continue", color = Color.Black)
         Spacer(Modifier.height(16.dp))
-
-        if (mode == AuthMode.SignIn) {
-            OfficialGoogleSignInButton { viewModel.signInWithGoogle() }
-        }
-
+        OfficialGoogleSignInButton { viewModel.signInWithGoogle() }
+    }
+}
         Spacer(Modifier.height(8.dp))
         Spacer(Modifier.height(16.dp))
     }
@@ -254,7 +131,7 @@ private fun OfficialGoogleSignInButton(onClick: () -> Unit) {
     )
 }
 
-private enum class AuthMode { SignIn, SignUp }
+// Email/password and sign-up removed: Google-only auth
 
 @Composable
 private fun FieldHeader(text: String) {
@@ -298,14 +175,14 @@ private fun GlowyField(
             keyboardOptions = KeyboardOptions(keyboardType = if (isPassword) KeyboardType.Password else keyboardType),
             visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
             trailingIcon = trailingIcon,
-            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
-                color = textColor ?: androidx.compose.material3.LocalTextStyle.current.color
-            ),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = red,
                 unfocusedBorderColor = red,
                 focusedLabelColor = red,
                 cursorColor = red
+            ),
+            textStyle = androidx.compose.material3.LocalTextStyle.current.copy(
+                color = textColor ?: Color.Black
             )
         )
     }

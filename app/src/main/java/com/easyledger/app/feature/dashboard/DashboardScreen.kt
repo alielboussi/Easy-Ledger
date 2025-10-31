@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import androidx.compose.material3.Button
 import com.easyledger.app.navigation.Routes
+import com.easyledger.app.core.auth.SessionManager
 
 @Composable
 fun DashboardScreen(navController: NavController) {
@@ -21,6 +22,14 @@ fun DashboardScreen(navController: NavController) {
         }
         Button(onClick = { navController.navigate(Routes.Profile.route) }) {
             Text("Edit Profile")
+        }
+        Button(onClick = {
+            SessionManager.signOut()
+            navController.navigate(Routes.Auth.route) {
+                popUpTo(0)
+            }
+        }) {
+            Text("Sign out")
         }
     }
 }
